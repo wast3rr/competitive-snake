@@ -4,41 +4,95 @@ using UnityEngine;
 
 public class SnakeMovementScript : MonoBehaviour
 {
-    public Rigidbody2D snakebody;
-    public float snakeSpeed = 2;
+    public Transform segmentPrefab;
+    public float snakeSpeed = 0.5f;
     public GameObject circle;
+    private float nextUpdate;
+    private Vector2 initialPosition;
+    public Color playerColor;
+    
+    private int resetSubtraction = 2;
+
     private List<Transform> segments = new List<Transform>();
+    private Vector2Int direction = Vector2Int.right;
 
     // Start is called before the first frame update
-    void Start()
+    void Start() 
     {
-        var newcircle = Instantiate(circle, new Vector3(transform.position.x, transform.position.y, 0), transform.rotation);
-        newcircle.transform.parent = GameObject.Find("Snake").transform;
-        snakebody.velocity = Vector2.right * snakeSpeed;
-
         segments = new List<Transform>();
         segments.Add(this.transform);
+
+        playerColor = this.GetComponent<SpriteRenderer>().color;
+        initialPosition = this.transform.position;
     }
 
     // Update is called once per frame
     void Update()
     {
-        if (Input.GetKeyDown(KeyCode.UpArrow)) {
-            snakebody.velocity = Vector2.up * snakeSpeed;
-        } else if (Input.GetKeyDown(KeyCode.DownArrow)) {
-            snakebody.velocity = Vector2.down * snakeSpeed;
-        } else if (Input.GetKeyDown(KeyCode.RightArrow)) {
-            snakebody.velocity = Vector2.right * snakeSpeed;
-        } else if (Input.GetKeyDown(KeyCode.LeftArrow)) {
-            snakebody.velocity = Vector2.left * snakeSpeed;
+        if (direction.x != 0f)
+        {
+            if (Input.GetKeyDown(KeyCode.UpArrow)) {
+                direction = Vector2Int.up;
+            } else if (Input.GetKeyDown(KeyCode.DownArrow)) {
+                direction = Vector2Int.down;
+            }
         }
+
+        else if (direction.y != 0f)
+        {
+            if (Input.GetKeyDown(KeyCode.RightArrow)) {
+                direction = Vector2Int.right;
+            } else if ( Input.GetKeyDown(KeyCode.LeftArrow)) {
+                direction = Vector2Int.left;
+            }
+        }
+    }
+
+    private void FixedUpdate() {
+        if (Time.time < nextUpdate) {
+            return;
+        }
+        nextUpdate = Time.time + (0.5f / (snakeSpeed));
+
+        for (int i = segments.Count - 1; i > 0; i--) {
+            segments[i].GetComponent<SpriteRenderer>().color = playerColor;
+            segments[i].position = segments[i - 1].position;
+        }
+        float x = transform.position.x + direction.x;
+        float y = transform.position.y + direction.y;
+        transform.position = new Vector2(x, y);
     }
 
     private void Grow() {
         Debug.Log("Test");
-        // Transform segment = Instantiate(snakebody);
-        // segment.position = segments[segments.Count - 1].position;
-        // segments.Add(segment);
+        Transform segment = Instantiate(segmentPrefab);
+        segment.GetComponent<SpriteRenderer>().color = playerColor;
+        segment.position = segments[segments.Count - 1].position;
+        segments.Add(segment);
+    }
+
+    private void Reset() {
+        Debug.Log("Test");
+        this.transform.position = initialPosition;
+        int count = segments.Count;
+        
+        if (count - resetSubtraction > 0) {
+            for (int i = count - 1; i > count - (resetSubtraction+1); i--) {
+                Debug.Log("Test" + count);
+                Debug.Log(i);
+                Destroy(segments[i].gameObject);
+                segments.RemoveAt(i);
+            }
+        } else {
+            for (int i = count - 1; i > 0; i--) {
+                Destroy(segments[i].gameObject);
+                segments.RemoveAt(i);
+            }
+        }
+
+        for (int i = segments.Count - 1; i > 0; i--) {
+            segments[i].position = segments[i - 1].position;
+        }
     }
 
     private void OnTriggerEnter2D(Collider2D other)
@@ -46,6 +100,22 @@ public class SnakeMovementScript : MonoBehaviour
         if (other.gameObject.CompareTag("Food"))
         {
             Grow();
+        } else if (other.gameObject.CompareTag("Wall")) 
+        {
+            Reset();
+        } else if (other.gameObject.CompareTag("Snake")) 
+        {
+            if (other.transform != this.transform) {
+                int thisIndex = segments.IndexOf(this.transform);
+                for (int i = 0; i < thisIndex+3; i++){
+                    if (i < segments.Count && other.transform == segments[i]) {
+                        Debug.Log("Dont delete");
+                        return;
+                    }
+                }
+                Debug.Log("deleted");
+                Reset();
+            }
         }
     }
 }

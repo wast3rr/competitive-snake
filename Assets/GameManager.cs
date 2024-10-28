@@ -16,7 +16,6 @@ public class GameManager : MonoBehaviour
     [SerializeField]
     private float _gameDuration;
     private bool _gameStarted;
-
     // Start is called before the first frame update
     void Start()
     {
