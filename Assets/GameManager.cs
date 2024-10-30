@@ -60,7 +60,7 @@ public class GameManager : MonoBehaviour
             new PlayerResult(){Player=1, Points=50},
             new PlayerResult(){Player=2, Points=25}
             };
-        _miniGameManager.EndGame();
+        _miniGameManager.EndGame(results);          // keep points under 10
         _gameStarted = false;
     }
 }
